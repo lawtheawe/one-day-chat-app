@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components/macro';
 
+import { useChatChannel } from '../../../hooks/useChats';
+
 const Wrapper = styled.div`
   width: 100%;
   padding: 0 15px;
@@ -10,7 +12,8 @@ const Wrapper = styled.div`
   border-radius: 0 3px 0 0;
 `;
 
-const ActiveChannel = ({ channel }: { channel: string }) => {
+const ActiveChannel = () => {
+  const channel = useChatChannel();
   return (
     <Wrapper>
       <span>{channel}</span>

@@ -6,6 +6,7 @@ import PageTitle from './components/PageTitle';
 import ChannelSelectContainer from './containers/ChannelSelectContainer';
 import ChatContainer from './containers/ChatContainer';
 import UserSelectContainer from './containers/UserSelectContainer';
+import { ChatsProvider } from './hooks/useChats';
 
 const ContentWrapper = styled.div``;
 
@@ -32,28 +33,36 @@ const FlexCol = styled(Col)`
 
 function App() {
   return (
-    <Container>
-      <PageTitle />
-      <ContentWrapper>
-        <Row>
-          <Col xs={12}>
-            <StyledCard>
-              <Row noGutters>
-                <Col xs={3} md={4}>
-                  <ChatSelectWrapper>
-                    <UserSelectContainer />
-                    <ChannelSelectContainer />
-                  </ChatSelectWrapper>
-                </Col>
-                <FlexCol xs={9} md={8}>
-                  <ChatContainer />
-                </FlexCol>
-              </Row>
-            </StyledCard>
-          </Col>
-        </Row>
-      </ContentWrapper>
-    </Container>
+    <ChatsProvider
+      initialChat={{
+        user: 'Sam',
+        channel: 'General Channel',
+        messages: [],
+      }}
+    >
+      <Container>
+        <PageTitle />
+        <ContentWrapper>
+          <Row>
+            <Col xs={12}>
+              <StyledCard>
+                <Row noGutters>
+                  <Col xs={3} md={4}>
+                    <ChatSelectWrapper>
+                      <UserSelectContainer />
+                      <ChannelSelectContainer />
+                    </ChatSelectWrapper>
+                  </Col>
+                  <FlexCol xs={9} md={8}>
+                    <ChatContainer />
+                  </FlexCol>
+                </Row>
+              </StyledCard>
+            </Col>
+          </Row>
+        </ContentWrapper>
+      </Container>
+    </ChatsProvider>
   );
 }
 

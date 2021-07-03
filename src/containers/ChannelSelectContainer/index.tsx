@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components/macro';
 
 import UL from '../../components/UL';
+import { useChatChannel, useSelectChannel } from '../../hooks/useChats';
 
 const ChannelItem = styled.li<{ active: boolean }>`
   position: relative;
@@ -27,14 +28,23 @@ const ChannelItem = styled.li<{ active: boolean }>`
 const channels = ['General Channel', 'Technology Channel', 'LGTM Channel'];
 
 const ChannelSelectContainer = () => {
-  const [activeChannel, setActiveChannel] = useState(channels[2]);
+  const activeChannel = useChatChannel();
+  const selectChannel = useSelectChannel();
+
+  const handleChannelClick = (channel: string) => {
+    selectChannel(channel);
+  };
 
   return (
     <>
       <p>2. Choose your Channel</p>
       <UL>
         {channels.map((channel) => (
-          <ChannelItem key={channel} active={activeChannel === channel}>
+          <ChannelItem
+            key={channel}
+            active={activeChannel === channel}
+            onClick={() => handleChannelClick(channel)}
+          >
             <p>
               <span>{channel}</span>
             </p>

@@ -4,6 +4,7 @@ import styled from 'styled-components/macro';
 
 import ButtonWithIcon from '../../../components/ButtonWithIcon';
 import UL from '../../../components/UL';
+import { useChatMessages, useChatUser } from '../../../hooks/useChats';
 import Message from '../Message';
 
 const StyledUL = styled(UL)`
@@ -25,28 +26,32 @@ const MessageItem = styled.li<{ reverse?: boolean }>`
 `;
 
 const ViewMessages = ({ className }: { className?: string }) => {
+  const messages = useChatMessages();
+  const user = useChatUser();
+
   return (
     <StyledUL className={className}>
-      <MessageItem>
-        <ButtonWithIcon label='Read More' icon={faArrowUp} />
-      </MessageItem>
-      <MessageItem>
-        <Message user={'Russell'} content={'testing'} time={'08:55'} />
-      </MessageItem>
+      {messages.length > 0 && (
+        <>
+          <MessageItem>
+            <ButtonWithIcon label='Read More' icon={faArrowUp} />
+          </MessageItem>
+          {messages.map(({ messageId, text, datetime, userId }) => (
+            <MessageItem key={messageId}>
+              <Message
+                reverse={user === userId}
+                user={userId}
+                content={text}
+                time={datetime}
+              />
+            </MessageItem>
+          ))}
 
-      <MessageItem>
-        <Message
-          reverse
-          user='Russell'
-          content='testing d'
-          time='08:55'
-          state='Sent'
-        />
-      </MessageItem>
-
-      <MessageItem>
-        <ButtonWithIcon label='Read More' icon={faArrowDown} />
-      </MessageItem>
+          <MessageItem>
+            <ButtonWithIcon label='Read More' icon={faArrowDown} />
+          </MessageItem>
+        </>
+      )}
     </StyledUL>
   );
 };

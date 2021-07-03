@@ -22,7 +22,7 @@ const MessagesContainer = styled.div`
 const ChatContainer = () => {
   return (
     <>
-      <ActiveChannel channel='LGTM Channel' />
+      <ActiveChannel />
       <MessagesContainer>
         <ViewMessages className='view-messages-container' />
         <SendMessageForm />
