@@ -41,7 +41,7 @@ const ChatContext = createContext<UseChatManagerResult>({
   },
   selectUser: () => {},
   selectChannel: () => {},
-  postMessage: () => {},
+  postMessage: () => Promise.resolve(),
   getMoreMessages: () => {},
 });
 
@@ -57,7 +57,7 @@ function useChatsManager(initialChat: Chat): {
   chat: Chat;
   selectUser: (user: UserProps) => void;
   selectChannel: (channelId: string) => void;
-  postMessage: (message: string) => void;
+  postMessage: (message: string) => Promise<void>;
   getMoreMessages: (old: boolean) => void;
 } {
   const [chat, dispatch] = useReducer((state: Chat, action: ActionType) => {
@@ -92,9 +92,14 @@ function useChatsManager(initialChat: Chat): {
     }
   }, initialChat);
 
-  const { data: latestMessagesData } = useQuery<{
-    fetchLatestMessages: MessageProps[];
-  }>(GET_LATEST_MESSAGES, {
+  const { data: latestMessagesData } = useQuery<
+    {
+      fetchLatestMessages: MessageProps[];
+    },
+    {
+      channelId: string;
+    }
+  >(GET_LATEST_MESSAGES, {
     variables: { channelId: chat.channel.id },
     fetchPolicy: 'no-cache',
   });
@@ -113,9 +118,16 @@ function useChatsManager(initialChat: Chat): {
     }
   >(FETCH_MORE_MESSAGES);
 
-  const [postMessageMutation] = useMutation<{
-    postMessage: MessageProps;
-  }>(POST_MESSAGE);
+  const [postMessageMutation] = useMutation<
+    {
+      postMessage: MessageProps;
+    },
+    {
+      channelId: string;
+      text: string;
+      userId: string;
+    }
+  >(POST_MESSAGE);
 
   const selectUser = useCallback((user: UserProps) => {
     dispatch({

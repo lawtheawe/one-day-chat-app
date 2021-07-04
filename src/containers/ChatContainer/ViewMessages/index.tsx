@@ -1,4 +1,3 @@
-import React from 'react';
 import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons';
 import styled from 'styled-components/macro';
 

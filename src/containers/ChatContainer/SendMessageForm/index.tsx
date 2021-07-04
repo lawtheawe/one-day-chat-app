@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Form } from 'react-bootstrap';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 
