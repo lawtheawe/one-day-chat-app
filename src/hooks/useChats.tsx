@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useReducer,
 } from 'react';
-import { gql, useLazyQuery, useMutation } from '@apollo/client';
+import { gql, useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CHANNELS } from '../data';
@@ -14,6 +14,21 @@ import { ChannelProps, UserProps } from '../types';
 const GET_LATEST_MESSAGES = gql`
   query FetchLatestMessages($channelId: String!) {
     fetchLatestMessages(channelId: $channelId) {
+      messageId
+      text
+      datetime
+      userId
+    }
+  }
+`;
+
+const FETCH_MORE_MESSAGES = gql`
+  query FetchLatestMessages(
+    $channelId: String!
+    $messageId: String!
+    $old: Boolean!
+  ) {
+    fetchMoreMessages(channelId: $channelId, messageId: $messageId, old: $old) {
       messageId
       text
       datetime
@@ -50,7 +65,7 @@ interface Chat {
 type ActionType =
   | { type: 'USER_CHANGE'; user: UserProps }
   | { type: 'CHANNEL_CHANGE'; channelId: ChannelProps['id'] }
-  | { type: 'ADD_MESSAGES'; messages: Message[] }
+  | { type: 'ADD_MESSAGES'; messages: Message[]; old?: boolean }
   | { type: 'NEW_CHANNEL_MESSAGES'; messages: Message[] };
 
 type UseChatManagerResult = ReturnType<typeof useChatsManager>;
@@ -64,6 +79,7 @@ const ChatContext = createContext<UseChatManagerResult>({
   selectUser: () => {},
   selectChannel: () => {},
   postMessage: () => {},
+  getMoreMessages: () => {},
 });
 
 function useChatsManager(initialChat: Chat): {
@@ -71,6 +87,7 @@ function useChatsManager(initialChat: Chat): {
   selectUser: (user: UserProps) => void;
   selectChannel: (channelId: string) => void;
   postMessage: (message: string) => void;
+  getMoreMessages: (old: boolean) => void;
 } {
   const [chat, dispatch] = useReducer((state: Chat, action: ActionType) => {
     switch (action.type) {
@@ -95,18 +112,35 @@ function useChatsManager(initialChat: Chat): {
       case 'ADD_MESSAGES':
         return {
           ...state,
-          messages: [...state.messages, ...action.messages],
+          messages: action.old
+            ? [...action.messages, ...state.messages]
+            : [...state.messages, ...action.messages],
         };
       default:
         throw new Error();
     }
   }, initialChat);
 
-  const [getMessages, { data: latestMessagesData }] = useLazyQuery<{
+  const { data: latestMessagesData } = useQuery<{
     fetchLatestMessages: Message[];
   }>(GET_LATEST_MESSAGES, {
     variables: { channelId: chat.channel.id },
+    fetchPolicy: 'no-cache',
   });
+
+  const [
+    fetchMoreMessages,
+    { data: fetchMoreMessagesData, variables: fetchMoreMessagesVar },
+  ] = useLazyQuery<
+    {
+      fetchMoreMessages: Message[];
+    },
+    {
+      channelId: string;
+      messageId: string;
+      old: boolean;
+    }
+  >(FETCH_MORE_MESSAGES);
 
   const [postMessageMutation] = useMutation<{
     postMessage: Message;
@@ -144,8 +178,6 @@ function useChatsManager(initialChat: Chat): {
           });
         }
       } catch (error) {
-        console.log('error', error);
-
         dispatch({
           type: 'ADD_MESSAGES',
           messages: [
@@ -162,9 +194,20 @@ function useChatsManager(initialChat: Chat): {
     [chat.channel.id, chat.user, postMessageMutation]
   );
 
-  useEffect(() => {
-    getMessages();
-  }, [getMessages, chat.channel]);
+  const getMoreMessages = useCallback(
+    async (old: boolean) => {
+      fetchMoreMessages({
+        variables: {
+          channelId: chat.channel.id,
+          messageId: old
+            ? chat.messages[0].messageId
+            : chat.messages[chat.messages.length - 1].messageId,
+          old,
+        },
+      });
+    },
+    [chat.channel.id, chat.messages, fetchMoreMessages]
+  );
 
   useEffect(() => {
     if (latestMessagesData) {
@@ -179,7 +222,23 @@ function useChatsManager(initialChat: Chat): {
     }
   }, [latestMessagesData]);
 
-  return { chat, selectUser, selectChannel, postMessage };
+  useEffect(() => {
+    const { old } = fetchMoreMessagesVar || {};
+
+    if (fetchMoreMessagesData && old !== undefined) {
+      const appendMessages = fetchMoreMessagesData.fetchMoreMessages;
+
+      if (appendMessages.length > 0) {
+        dispatch({
+          type: 'ADD_MESSAGES',
+          messages: old ? [...appendMessages].reverse() : appendMessages,
+          old,
+        });
+      }
+    }
+  }, [fetchMoreMessagesData, fetchMoreMessagesVar]);
+
+  return { chat, selectUser, selectChannel, postMessage, getMoreMessages };
 }
 
 export const ChatsProvider: React.FunctionComponent<{
@@ -225,3 +284,10 @@ export const usePostMessage = (): UseChatManagerResult['postMessage'] => {
 
   return postMessage;
 };
+
+export const useGetMoreMessages =
+  (): UseChatManagerResult['getMoreMessages'] => {
+    const { getMoreMessages } = useContext(ChatContext);
+
+    return getMoreMessages;
+  };
