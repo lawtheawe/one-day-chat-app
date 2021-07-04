@@ -112,7 +112,7 @@ const Message = ({
       </MessageContent>
       <MessageMeta>
         <MessageTime>{toHHmm(time)}</MessageTime>
-        {state && (
+        {reverse && state && (
           <>
             {state === 'Sent' ? (
               <FontAwesomeIcon icon={faCheckCircle} color='#9ec94a' />

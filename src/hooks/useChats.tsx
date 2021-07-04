@@ -11,27 +11,25 @@ import { v4 as uuidv4 } from 'uuid';
 import { CHANNELS } from '../data';
 import { POST_MESSAGE } from '../graphql/mutations';
 import { FETCH_MORE_MESSAGES, GET_LATEST_MESSAGES } from '../graphql/queries';
-import { ChannelProps, UserProps } from '../types';
-
-interface Message {
-  __typename?: 'Message';
-  messageId: string;
-  text: string;
-  datetime: string;
-  userId: string;
-}
+import {
+  ChannelProps,
+  MessageProps,
+  MessageWithState,
+  MsgState,
+  UserProps,
+} from '../types';
 
 interface Chat {
   user: UserProps;
   channel: ChannelProps;
-  messages: Message[];
+  messages: MessageWithState[];
 }
 
 type ActionType =
   | { type: 'USER_CHANGE'; user: UserProps }
   | { type: 'CHANNEL_CHANGE'; channelId: ChannelProps['id'] }
-  | { type: 'ADD_MESSAGES'; messages: Message[]; old?: boolean }
-  | { type: 'NEW_CHANNEL_MESSAGES'; messages: Message[] };
+  | { type: 'ADD_MESSAGES'; messages: MessageWithState[]; old?: boolean }
+  | { type: 'NEW_CHANNEL_MESSAGES'; messages: MessageWithState[] };
 
 type UseChatManagerResult = ReturnType<typeof useChatsManager>;
 
@@ -45,6 +43,14 @@ const ChatContext = createContext<UseChatManagerResult>({
   selectChannel: () => {},
   postMessage: () => {},
   getMoreMessages: () => {},
+});
+
+const addStateToMessage = (
+  state: MsgState,
+  message: MessageProps
+): MessageWithState => ({
+  ...message,
+  state,
 });
 
 function useChatsManager(initialChat: Chat): {
@@ -87,7 +93,7 @@ function useChatsManager(initialChat: Chat): {
   }, initialChat);
 
   const { data: latestMessagesData } = useQuery<{
-    fetchLatestMessages: Message[];
+    fetchLatestMessages: MessageProps[];
   }>(GET_LATEST_MESSAGES, {
     variables: { channelId: chat.channel.id },
     fetchPolicy: 'no-cache',
@@ -98,7 +104,7 @@ function useChatsManager(initialChat: Chat): {
     { data: fetchMoreMessagesData, variables: fetchMoreMessagesVar },
   ] = useLazyQuery<
     {
-      fetchMoreMessages: Message[];
+      fetchMoreMessages: MessageProps[];
     },
     {
       channelId: string;
@@ -108,7 +114,7 @@ function useChatsManager(initialChat: Chat): {
   >(FETCH_MORE_MESSAGES);
 
   const [postMessageMutation] = useMutation<{
-    postMessage: Message;
+    postMessage: MessageProps;
   }>(POST_MESSAGE);
 
   const selectUser = useCallback((user: UserProps) => {
@@ -139,7 +145,9 @@ function useChatsManager(initialChat: Chat): {
         if (newMessage.data) {
           dispatch({
             type: 'ADD_MESSAGES',
-            messages: [newMessage.data.postMessage],
+            messages: [newMessage.data.postMessage].map((msg) =>
+              addStateToMessage(MsgState.SENT, msg)
+            ),
           });
         }
       } catch (error) {
@@ -151,6 +159,7 @@ function useChatsManager(initialChat: Chat): {
               text: message,
               datetime: new Date().toISOString(),
               userId: chat.user,
+              state: MsgState.ERROR,
             },
           ],
         });
@@ -176,9 +185,9 @@ function useChatsManager(initialChat: Chat): {
 
   useEffect(() => {
     if (latestMessagesData) {
-      const reverseLatestMessages = [
-        ...latestMessagesData.fetchLatestMessages,
-      ].reverse();
+      const reverseLatestMessages = [...latestMessagesData.fetchLatestMessages]
+        .reverse()
+        .map((msg) => addStateToMessage(MsgState.SENT, msg));
 
       dispatch({
         type: 'NEW_CHANNEL_MESSAGES',
@@ -194,9 +203,12 @@ function useChatsManager(initialChat: Chat): {
       const appendMessages = fetchMoreMessagesData.fetchMoreMessages;
 
       if (appendMessages.length > 0) {
+        const messages = old ? [...appendMessages].reverse() : appendMessages;
         dispatch({
           type: 'ADD_MESSAGES',
-          messages: old ? [...appendMessages].reverse() : appendMessages,
+          messages: messages.map((msg) =>
+            addStateToMessage(MsgState.SENT, msg)
+          ),
           old,
         });
       }
@@ -226,7 +238,7 @@ export const useChatChannel = (): ChannelProps => {
   return chat.channel;
 };
 
-export const useChatMessages = (): Message[] => {
+export const useChatMessages = (): MessageWithState[] => {
   const { chat } = useContext(ChatContext);
 
   return chat.messages;

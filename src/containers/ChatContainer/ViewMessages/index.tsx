@@ -49,13 +49,14 @@ const ViewMessages = ({ className }: { className?: string }) => {
               onClick={() => handleReadMore(true)}
             />
           </MessageItem>
-          {messages.map(({ messageId, text, datetime, userId }) => (
+          {messages.map(({ messageId, text, datetime, userId, state }) => (
             <MessageItem key={messageId}>
               <Message
                 reverse={user === userId}
                 user={userId}
                 content={text}
                 time={datetime}
+                state={state}
               />
             </MessageItem>
           ))}
