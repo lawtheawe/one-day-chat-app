@@ -5,48 +5,13 @@ import React, {
   useEffect,
   useReducer,
 } from 'react';
-import { gql, useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CHANNELS } from '../data';
+import { POST_MESSAGE } from '../graphql/mutations';
+import { FETCH_MORE_MESSAGES, GET_LATEST_MESSAGES } from '../graphql/queries';
 import { ChannelProps, UserProps } from '../types';
-
-const GET_LATEST_MESSAGES = gql`
-  query FetchLatestMessages($channelId: String!) {
-    fetchLatestMessages(channelId: $channelId) {
-      messageId
-      text
-      datetime
-      userId
-    }
-  }
-`;
-
-const FETCH_MORE_MESSAGES = gql`
-  query FetchLatestMessages(
-    $channelId: String!
-    $messageId: String!
-    $old: Boolean!
-  ) {
-    fetchMoreMessages(channelId: $channelId, messageId: $messageId, old: $old) {
-      messageId
-      text
-      datetime
-      userId
-    }
-  }
-`;
-
-const POST_MESSAGE = gql`
-  mutation ($channelId: String!, $text: String!, $userId: String!) {
-    postMessage(channelId: $channelId, text: $text, userId: $userId) {
-      messageId
-      text
-      datetime
-      userId
-    }
-  }
-`;
 
 interface Message {
   __typename?: 'Message';

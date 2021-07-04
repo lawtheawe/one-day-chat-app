@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import styled from 'styled-components/macro';
 
 import Avatar from '../../../components/Avatar';
+import { toHHmm } from '../../../utils/datetime';
 
 const AvatarText = styled.div`
   font-size: 0.75rem;
@@ -101,7 +102,7 @@ const Message = ({
       </AvatarWithText>
       <MessageContent>{content}</MessageContent>
       <MessageMeta>
-        <MessageTime>{time}</MessageTime>
+        <MessageTime>{toHHmm(time)}</MessageTime>
         {state && (
           <>
             {state === 'Sent' ? (
