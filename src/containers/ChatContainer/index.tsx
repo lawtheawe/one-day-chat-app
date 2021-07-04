@@ -8,6 +8,7 @@ import ViewMessages from './ViewMessages';
 const MessagesContainer = styled.div`
   position: relative;
   padding: 1rem;
+  max-height: 80vh;
 
   flex-grow: 2;
 
@@ -16,6 +17,20 @@ const MessagesContainer = styled.div`
 
   > .view-messages-container {
     flex-grow: 2;
+    overflow: scroll;
+
+    ::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f4f5fb;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: gray;
+    }
   }
 `;
 

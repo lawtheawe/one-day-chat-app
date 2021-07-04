@@ -79,6 +79,21 @@ const MessageWrapper = styled.div<{ reverse?: boolean }>`
     left: inherit;`}
     }
   }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    flex-grow: 2;
+
+    ${AvatarWithText} {
+      align-items: center;
+      ${({ reverse }) =>
+        reverse ? `flex-direction: row-reverse;` : `flex-direction: row;`}
+    }
+
+    ${MessageMeta} {
+      align-self: ${({ reverse }) => (reverse ? `flex-start` : `flex-end`)};
+    }
+  }
 `;
 
 const Message = ({
