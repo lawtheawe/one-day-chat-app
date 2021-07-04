@@ -100,7 +100,16 @@ const Message = ({
         <Avatar src={`./users/${user}.png`} alt={user} />
         <AvatarText>{user}</AvatarText>
       </AvatarWithText>
-      <MessageContent>{content}</MessageContent>
+      <MessageContent>
+        {content.split('\n').map((line, key) => {
+          return (
+            <span key={key}>
+              {line}
+              <br />
+            </span>
+          );
+        })}
+      </MessageContent>
       <MessageMeta>
         <MessageTime>{toHHmm(time)}</MessageTime>
         {state && (

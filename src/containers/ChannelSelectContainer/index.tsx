@@ -4,7 +4,6 @@ import styled from 'styled-components/macro';
 import UL from '../../components/UL';
 import { CHANNELS } from '../../data';
 import { useChatChannel, useSelectChannel } from '../../hooks/useChats';
-import { ChannelProps } from '../../types';
 
 const ChannelItem = styled.li<{ active: boolean }>`
   position: relative;

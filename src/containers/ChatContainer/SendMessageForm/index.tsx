@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Form } from 'react-bootstrap';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 
@@ -8,6 +8,30 @@ import { usePostMessage } from '../../../hooks/useChats';
 const SendMessageForm = () => {
   const postMessage = usePostMessage();
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const storageKey = 'typingMessage';
+
+    const saveMessage = () => {
+      const typingMessage = textAreaRef?.current?.value || '';
+
+      if (typingMessage) {
+        localStorage.setItem(storageKey, typingMessage);
+      }
+    };
+    window.addEventListener('beforeunload', saveMessage);
+
+    const savedMessage = localStorage.getItem(storageKey) || '';
+
+    if (textAreaRef.current) {
+      textAreaRef.current.value = savedMessage;
+      localStorage.removeItem(storageKey);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', saveMessage);
+    };
+  }, []);
 
   return (
     <Form.Group className='mt-3 mb-0'>
