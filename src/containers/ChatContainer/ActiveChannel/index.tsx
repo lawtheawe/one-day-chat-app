@@ -16,7 +16,7 @@ const ActiveChannel = () => {
   const channel = useChatChannel();
   return (
     <Wrapper>
-      <span>{channel}</span>
+      <span>{channel.name}</span>
     </Wrapper>
   );
 };

@@ -7,6 +7,7 @@ import ChannelSelectContainer from './containers/ChannelSelectContainer';
 import ChatContainer from './containers/ChatContainer';
 import UserSelectContainer from './containers/UserSelectContainer';
 import { ChatsProvider } from './hooks/useChats';
+import { CHANNELS, USERS } from './data';
 
 const ContentWrapper = styled.div``;
 
@@ -35,8 +36,8 @@ function App() {
   return (
     <ChatsProvider
       initialChat={{
-        user: 'Sam',
-        channel: 'General Channel',
+        user: USERS[0],
+        channel: CHANNELS[0],
         messages: [],
       }}
     >

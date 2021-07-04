@@ -2,14 +2,39 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useReducer,
 } from 'react';
+import { gql, useLazyQuery, useMutation } from '@apollo/client';
+import { v4 as uuidv4 } from 'uuid';
 
-type ActionType =
-  | { type: 'USER_CHANGE'; user: string }
-  | { type: 'CHANNEL_CHANGE'; channel: string };
+import { CHANNELS } from '../data';
+import { ChannelProps, UserProps } from '../types';
+
+const GET_LATEST_MESSAGES = gql`
+  query FetchLatestMessages($channelId: String!) {
+    fetchLatestMessages(channelId: $channelId) {
+      messageId
+      text
+      datetime
+      userId
+    }
+  }
+`;
+
+const POST_MESSAGE = gql`
+  mutation ($channelId: String!, $text: String!, $userId: String!) {
+    postMessage(channelId: $channelId, text: $text, userId: $userId) {
+      messageId
+      text
+      datetime
+      userId
+    }
+  }
+`;
 
 interface Message {
+  __typename?: 'Message';
   messageId: string;
   text: string;
   datetime: string;
@@ -17,17 +42,23 @@ interface Message {
 }
 
 interface Chat {
-  user: string;
-  channel: string;
+  user: UserProps;
+  channel: ChannelProps;
   messages: Message[];
 }
+
+type ActionType =
+  | { type: 'USER_CHANGE'; user: UserProps }
+  | { type: 'CHANNEL_CHANGE'; channelId: ChannelProps['id'] }
+  | { type: 'ADD_MESSAGES'; messages: Message[] }
+  | { type: 'NEW_CHANNEL_MESSAGES'; messages: Message[] };
 
 type UseChatManagerResult = ReturnType<typeof useChatsManager>;
 
 const ChatContext = createContext<UseChatManagerResult>({
   chat: {
     user: '',
-    channel: '',
+    channel: { name: '', id: '' },
     messages: [],
   },
   selectUser: () => {},
@@ -37,8 +68,8 @@ const ChatContext = createContext<UseChatManagerResult>({
 
 function useChatsManager(initialChat: Chat): {
   chat: Chat;
-  selectUser: (user: string) => void;
-  selectChannel: (channel: string) => void;
+  selectUser: (user: UserProps) => void;
+  selectChannel: (channelId: string) => void;
   postMessage: (message: string) => void;
 } {
   const [chat, dispatch] = useReducer((state: Chat, action: ActionType) => {
@@ -49,32 +80,104 @@ function useChatsManager(initialChat: Chat): {
           user: action.user,
         };
       case 'CHANNEL_CHANGE':
+        const channel = CHANNELS.find(
+          (channel) => channel.id === action.channelId
+        ) || { name: '', id: '' };
         return {
           ...state,
-          channel: action.channel,
+          channel,
+        };
+      case 'NEW_CHANNEL_MESSAGES':
+        return {
+          ...state,
+          messages: action.messages,
+        };
+      case 'ADD_MESSAGES':
+        return {
+          ...state,
+          messages: [...state.messages, ...action.messages],
         };
       default:
         throw new Error();
     }
   }, initialChat);
 
-  const selectUser = useCallback((user: string) => {
+  const [getMessages, { data: latestMessagesData }] = useLazyQuery<{
+    fetchLatestMessages: Message[];
+  }>(GET_LATEST_MESSAGES, {
+    variables: { channelId: chat.channel.id },
+  });
+
+  const [postMessageMutation] = useMutation<{
+    postMessage: Message;
+  }>(POST_MESSAGE);
+
+  const selectUser = useCallback((user: UserProps) => {
     dispatch({
       type: 'USER_CHANGE',
       user,
     });
   }, []);
 
-  const selectChannel = useCallback((channel: string) => {
+  const selectChannel = useCallback((channelId: string) => {
     dispatch({
       type: 'CHANNEL_CHANGE',
-      channel,
+      channelId,
     });
   }, []);
 
-  const postMessage = useCallback((message: string) => {
-    console.log('postMessage', message);
-  }, []);
+  const postMessage = useCallback(
+    async (message: string) => {
+      try {
+        const newMessage = await postMessageMutation({
+          variables: {
+            channelId: chat.channel.id,
+            text: message,
+            userId: chat.user,
+          },
+        });
+
+        if (newMessage.data) {
+          dispatch({
+            type: 'ADD_MESSAGES',
+            messages: [newMessage.data.postMessage],
+          });
+        }
+      } catch (error) {
+        console.log('error', error);
+
+        dispatch({
+          type: 'ADD_MESSAGES',
+          messages: [
+            {
+              messageId: uuidv4(),
+              text: message,
+              datetime: new Date().toISOString(),
+              userId: chat.user,
+            },
+          ],
+        });
+      }
+    },
+    [chat.channel.id, chat.user, postMessageMutation]
+  );
+
+  useEffect(() => {
+    getMessages();
+  }, [getMessages, chat.channel]);
+
+  useEffect(() => {
+    if (latestMessagesData) {
+      const reverseLatestMessages = [
+        ...latestMessagesData.fetchLatestMessages,
+      ].reverse();
+
+      dispatch({
+        type: 'NEW_CHANNEL_MESSAGES',
+        messages: reverseLatestMessages,
+      });
+    }
+  }, [latestMessagesData]);
 
   return { chat, selectUser, selectChannel, postMessage };
 }
@@ -93,7 +196,7 @@ export const useChatUser = (): string => {
   return chat.user;
 };
 
-export const useChatChannel = (): string => {
+export const useChatChannel = (): ChannelProps => {
   const { chat } = useContext(ChatContext);
 
   return chat.channel;
@@ -102,7 +205,7 @@ export const useChatChannel = (): string => {
 export const useChatMessages = (): Message[] => {
   const { chat } = useContext(ChatContext);
 
-  return chat.messages || [];
+  return chat.messages;
 };
 
 export const useSelectUser = (): UseChatManagerResult['selectUser'] => {

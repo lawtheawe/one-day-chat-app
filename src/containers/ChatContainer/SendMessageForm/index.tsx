@@ -20,13 +20,14 @@ const SendMessageForm = () => {
       <ButtonWithIcon
         label={'Send Message'}
         icon={faPaperPlane}
-        onClick={(e) => {
+        onClick={async (e) => {
           e.preventDefault();
+          if (textAreaRef?.current?.value) {
+            const msg = textAreaRef.current.value;
 
-          const msg = textAreaRef?.current?.value || '';
+            await postMessage(msg);
 
-          if (msg) {
-            postMessage(msg);
+            textAreaRef.current.value = '';
           }
         }}
       />

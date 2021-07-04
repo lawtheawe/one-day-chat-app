@@ -2,6 +2,7 @@ import React, { ChangeEvent } from 'react';
 import { Form } from 'react-bootstrap';
 
 import Select from '../../components/Select';
+import { USERS } from '../../data';
 import { useChatUser, useSelectUser } from '../../hooks/useChats';
 
 const UserSelectContainer = () => {
@@ -21,7 +22,7 @@ const UserSelectContainer = () => {
       <Select
         id='user-select'
         label='1. Choose your user'
-        options={['Joyse', 'Sam', 'Russell']}
+        options={USERS}
         value={user}
         onChange={handleSelectChange}
       />
