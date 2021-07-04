@@ -7,7 +7,7 @@ import ViewMessages from './ViewMessages';
 const MessagesContainer = styled.div`
   position: relative;
   padding: 1rem;
-  max-height: 80vh;
+  height: 80vh;
 
   flex-grow: 2;
 
